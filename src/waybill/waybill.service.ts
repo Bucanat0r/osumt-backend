@@ -100,4 +100,47 @@ export class WaybillService {
 
     return await this.waybillRepository.save(newWaybill);
   }
+
+  async findOneWaybill(id: number) {
+    const waybill = await this.waybillRepository.findOne({ where: { id } });
+    if (!waybill) {
+      throw new NotFoundException(`Waybill with ID ${id} not found`);
+    }
+    return waybill;
+  }
+
+  async updateWaybill(id: number, data: any) {
+    const waybill = await this.waybillRepository.findOne({ where: { id } });
+    if (!waybill) {
+      throw new NotFoundException(`Waybill with ID ${id} not found`);
+    }
+
+    if (data.sender_name !== undefined) waybill.sender_name = data.sender_name;
+    if (data.sender_phone !== undefined) waybill.sender_phone = data.sender_phone;
+    if (data.receiver_name !== undefined) waybill.receiver_name = data.receiver_name;
+    if (data.receiver_phone !== undefined) waybill.receiver_phone = data.receiver_phone;
+    if (data.item_description !== undefined) waybill.item_description = data.item_description;
+    if (data.declared_value !== undefined) waybill.declared_value = Number(data.declared_value);
+    if (data.chargeable_weight !== undefined) waybill.chargeable_weight = Number(data.chargeable_weight);
+    if (data.is_fragile !== undefined) waybill.is_fragile = data.is_fragile;
+    if (data.is_home_delivery !== undefined) waybill.is_home_delivery = data.is_home_delivery;
+    if (data.final_charged_price !== undefined) {
+      waybill.final_charged_price = Number(data.final_charged_price);
+      const quote = await this.calculateQuote({
+        origin: 'Lagos Central',
+        destination: 'Abuja Main',
+        weight: waybill.chargeable_weight,
+        isFragile: waybill.is_fragile,
+        isHomeDelivery: waybill.is_home_delivery,
+      });
+      waybill.official_calculated_price = quote.officialCalculatedPrice;
+      waybill.discount_applied = Math.max(0, waybill.official_calculated_price - waybill.final_charged_price);
+      waybill.is_discount_approved = waybill.final_charged_price >= waybill.official_calculated_price;
+    }
+    if (data.is_discount_approved !== undefined) {
+      waybill.is_discount_approved = data.is_discount_approved;
+    }
+
+    return await this.waybillRepository.save(waybill);
+  }
 }

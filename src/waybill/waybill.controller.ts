@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get, Put, Param } from '@nestjs/common';
 import { WaybillService } from './waybill.service';
 
 @Controller('waybills')
@@ -26,5 +26,15 @@ export class WaybillController {
     // In production, this maps to req.user.id from your JWT state.
     const mockClerkId = 1; 
     return this.waybillService.createWaybill(mockClerkId, body);
+  }
+
+  @Get(':id')
+  async getWaybill(@Param('id') id: string) {
+    return this.waybillService.findOneWaybill(Number(id));
+  }
+
+  @Put(':id')
+  async updateWaybill(@Param('id') id: string, @Body() body: any) {
+    return this.waybillService.updateWaybill(Number(id), body);
   }
 }

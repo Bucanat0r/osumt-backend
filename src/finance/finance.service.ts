@@ -53,4 +53,45 @@ export class FinanceService {
 
     return await this.salesRepository.save(record);
   }
+
+  async findOneDailySales(id: number) {
+    const record = await this.salesRepository.findOne({ where: { id } });
+    if (!record) {
+      throw new BadRequestException(`Daily sales record with ID ${id} not found`);
+    }
+    return record;
+  }
+
+  async updateDailySales(id: number, dto: any) {
+    const record = await this.salesRepository.findOne({ where: { id } });
+    if (!record) {
+      throw new BadRequestException(`Daily sales record with ID ${id} not found`);
+    }
+
+    if (dto.cash_pos !== undefined) record.cash_pos = Number(dto.cash_pos);
+    if (dto.credit !== undefined) record.credit = Number(dto.credit);
+    if (dto.gross_sales !== undefined) record.gross_sales = Number(dto.gross_sales);
+    if (dto.expenses !== undefined) record.expenses = Number(dto.expenses);
+    if (dto.credit_paid !== undefined) record.credit_paid = Number(dto.credit_paid);
+    if (dto.actual_banked !== undefined) record.actual_banked = Number(dto.actual_banked);
+    if (dto.posting_date !== undefined) record.posting_date = dto.posting_date;
+
+    // Rule 1: Validate gross ledger balancing parameters
+    if (record.cash_pos + record.credit !== record.gross_sales) {
+      throw new BadRequestException(
+        `Bookkeeping Error: Cash/POS (₦${record.cash_pos}) + Credit (₦${record.credit}) does not equal Gross Sales (₦${record.gross_sales}).`
+      );
+    }
+
+    // Rule 2: Automate 5% management remittance
+    record.remittance_deduction = record.gross_sales * 0.05;
+
+    // Rule 3: Process Expected Bank formula
+    record.expected_bank = record.gross_sales - record.remittance_deduction - record.expenses + record.credit_paid;
+
+    // Rule 4: Compute Bank Delta variance
+    record.bank_delta = record.actual_banked - record.expected_bank;
+
+    return await this.salesRepository.save(record);
+  }
 }
