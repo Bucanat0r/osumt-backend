@@ -5,66 +5,66 @@ export class Waybill {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: false })
   waybill_no: string;
 
-  @Column()
+  @Column({ nullable: true })
   origin_depot_id: number;
 
-  @Column()
+  @Column({ nullable: true })
   destination_depot_id: number;
 
-  @Column()
+  @Column({ nullable: true })
   clerk_id: number;
 
-  @Column()
+  @Column({ nullable: false })
   sender_name: string;
 
-  @Column()
+  @Column({ nullable: false })
   sender_phone: string;
 
-  @Column()
+  @Column({ nullable: false })
   receiver_name: string;
 
-  @Column()
+  @Column({ nullable: false })
   receiver_phone: string;
 
   @Column({ nullable: true })
   receiver_address: string;
 
-  @Column()
+  @Column({ nullable: false })
   item_description: string;
 
-  @Column('numeric', { precision: 12, scale: 2 })
+  @Column('numeric', { precision: 12, scale: 2, nullable: false })
   declared_value: number;
 
-  @Column('numeric', { precision: 8, scale: 2 })
+  @Column('numeric', { precision: 8, scale: 2, nullable: false })
   chargeable_weight: number;
 
-  @Column({ default: false })
+  @Column({ default: false, nullable: true })
   is_fragile: boolean;
 
-  @Column({ default: false })
+  @Column({ default: false, nullable: true })
   is_home_delivery: boolean;
 
-  @Column('numeric', { precision: 10, scale: 2 })
+  @Column('numeric', { precision: 10, scale: 2, nullable: false })
   official_calculated_price: number;
 
-  @Column('numeric', { precision: 10, scale: 2 })
+  @Column('numeric', { precision: 10, scale: 2, nullable: false })
   final_charged_price: number;
 
-  @Column('numeric', { precision: 10, scale: 2, default: 0.00 })
+  @Column('numeric', { precision: 10, scale: 2, default: 0.00, nullable: true })
   discount_applied: number;
 
-  @Column({ default: true })
+  @Column({ default: true, nullable: true })
   is_discount_approved: boolean;
 
-  @Column({ default: 'Registered' })
+  @Column({ default: 'Registered', nullable: true })
   status: string;
 
-  @Column({ default: 'Unpaid' })
+  @Column({ default: 'Unpaid', nullable: true })
   payment: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ nullable: true })
   created_at: Date;
 }

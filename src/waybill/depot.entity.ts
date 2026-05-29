@@ -5,15 +5,15 @@ export class Depot {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: false })
   depot_name: string;
 
-  @Column()
+  @Column({ nullable: true })
   region: string;
 
-  @Column({ default: true })
+  @Column({ default: true, nullable: true })
   active_status: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ nullable: true })
   created_at: Date;
 }

@@ -5,24 +5,24 @@ export class LaneRate {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: false })
   origin: string;
 
-  @Column()
+  @Column({ nullable: false })
   destination: string;
 
-  @Column()
+  @Column({ nullable: true })
   band: string;
 
-  @Column('numeric', { precision: 10, scale: 2 })
+  @Column('numeric', { precision: 10, scale: 2, nullable: false })
   base_price: number;
 
-  @Column('numeric', { precision: 10, scale: 2 })
+  @Column('numeric', { precision: 10, scale: 2, nullable: false })
   addl_per_kg: number;
 
-  @Column('numeric', { precision: 10, scale: 2 })
+  @Column('numeric', { precision: 10, scale: 2, nullable: false })
   door_addon: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ nullable: true })
   created_at: Date;
 }
