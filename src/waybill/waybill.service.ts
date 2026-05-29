@@ -106,6 +106,14 @@ export class WaybillService {
     return await this.waybillRepository.find({ order: { id: 'DESC' } });
   }
 
+  async findByWaybillNo(waybillNo: string) {
+    const waybill = await this.waybillRepository.findOne({ where: { waybill_no: waybillNo } });
+    if (!waybill) {
+      throw new NotFoundException(`Waybill ${waybillNo} not found. Please check the tracking number and try again.`);
+    }
+    return waybill;
+  }
+
   async findOneWaybill(id: number) {
     const waybill = await this.waybillRepository.findOne({ where: { id } });
     if (!waybill) {

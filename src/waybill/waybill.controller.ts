@@ -33,6 +33,11 @@ export class WaybillController {
     return this.waybillService.findAllWaybills();
   }
 
+  @Get('track/:waybillNo')
+  async trackWaybill(@Param('waybillNo') waybillNo: string) {
+    return this.waybillService.findByWaybillNo(waybillNo);
+  }
+
   @Get(':id')
   async getWaybill(@Param('id') id: string) {
     return this.waybillService.findOneWaybill(Number(id));
