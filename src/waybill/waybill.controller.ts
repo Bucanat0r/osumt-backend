@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, Get, Put, Param } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get, Put, Patch, Param } from '@nestjs/common';
 import { WaybillService } from './waybill.service';
 
 @Controller('waybills')
@@ -36,6 +36,16 @@ export class WaybillController {
   @Get('track/:waybillNo')
   async trackWaybill(@Param('waybillNo') waybillNo: string) {
     return this.waybillService.findByWaybillNo(waybillNo);
+  }
+
+  @Get('today')
+  async getTodaysWaybills() {
+    return this.waybillService.findTodaysWaybills();
+  }
+
+  @Patch(':id/payment')
+  async updatePaymentStatus(@Param('id') id: string) {
+    return this.waybillService.markAsPaid(Number(id));
   }
 
   @Get(':id')

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Waybill } from './waybill.entity';
 
 @Injectable()
@@ -114,6 +114,27 @@ export class WaybillService {
       throw new NotFoundException(`Waybill ${waybillNo} not found. Please check the tracking number and try again.`);
     }
     return waybill;
+  }
+
+  async findTodaysWaybills() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return await this.waybillRepository.find({
+      where: { created_at: MoreThanOrEqual(today) },
+      order: { id: 'DESC' },
+    });
+  }
+
+  async markAsPaid(id: number) {
+    const waybill = await this.waybillRepository.findOne({ where: { id } });
+    if (!waybill) {
+      throw new NotFoundException(`Waybill with ID ${id} not found`);
+    }
+    if (waybill.payment === 'Paid') {
+      throw new BadRequestException('This waybill is already marked as Paid.');
+    }
+    waybill.payment = 'Paid';
+    return await this.waybillRepository.save(waybill);
   }
 
   async findOneWaybill(id: number) {
