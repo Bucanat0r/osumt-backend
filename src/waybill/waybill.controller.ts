@@ -1,37 +1,30 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { WaybillService } from './waybill.service';
 
-@Controller('waybill')
+@Controller('waybills')
 export class WaybillController {
-  constructor(private waybillService: WaybillService) {}
+  constructor(private readonly waybillService: WaybillService) {}
 
-  @Get('depots')
-  async getDepots() {
-    return this.waybillService.getDepots();
-  }
-
-  @Get('quote')
+  // 1. Endpoint to instantly fetch calculated quotes on keystroke/toggle
+  @Post('quote')
   async getQuote(
-    @Query('originDepotId') originDepotId: number,
-    @Query('destinationDepotId') destinationDepotId: number,
-    @Query('weight') weight: number,
-    @Query('isHomeDelivery') isHomeDelivery: string,
+    @Body() payload: {
+      origin: string;
+      destination: string;
+      weight: number;
+      isFragile: boolean;
+      isHomeDelivery: boolean;
+    },
   ) {
-    return this.waybillService.calculateQuote(
-      Number(originDepotId),
-      Number(destinationDepotId),
-      Number(weight),
-      isHomeDelivery === 'true',
-    );
+    return this.waybillService.calculateQuote(payload);
   }
 
+  // 2. Endpoint to save the complete shipment transaction
   @Post()
-  async createWaybill(@Body() body: any) {
-    return this.waybillService.createWaybill(body);
-  }
-
-  @Get()
-  async getWaybills() {
-    return this.waybillService.getWaybills();
+  async registerWaybill(@Body() body: any) {
+    // For prototype testing, passing mock clerk ID 1. 
+    // In production, this maps to req.user.id from your JWT state.
+    const mockClerkId = 1; 
+    return this.waybillService.createWaybill(mockClerkId, body);
   }
 }

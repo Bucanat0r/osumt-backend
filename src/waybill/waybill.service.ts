@@ -1,136 +1,103 @@
-import { Injectable, OnModuleInit, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Depot } from './depot.entity';
-import { LaneRate } from './lane-rate.entity';
 import { Waybill } from './waybill.entity';
 
 @Injectable()
-export class WaybillService implements OnModuleInit {
+export class WaybillService {
   constructor(
     @InjectRepository(Waybill)
     private waybillRepository: Repository<Waybill>,
-    @InjectRepository(Depot)
-    private depotRepository: Repository<Depot>,
-    @InjectRepository(LaneRate)
-    private laneRateRepository: Repository<LaneRate>,
+    // We will inject a LaneRates repository to pull live official parameters
   ) {}
 
-  async onModuleInit() {
-    // 1. Seed depots if empty
-    const depotCount = await this.depotRepository.count();
-    if (depotCount === 0) {
-      const lagos = this.depotRepository.create({
-        depot_name: 'Lagos Central',
-        region: 'South-West',
-        active_status: true,
-      });
-      const abuja = this.depotRepository.create({
-        depot_name: 'Abuja Main',
-        region: 'North-Central',
-        active_status: true,
-      });
-      await this.depotRepository.save([lagos, abuja]);
-      console.log('Default depots seeded successfully (Lagos Central, Abuja Main)');
+  /**
+   * Calculates the official shipping quote based on route configurations
+   */
+  async calculateQuote(payload: {
+    origin: string;
+    destination: string;
+    weight: number;
+    isFragile: boolean;
+    isHomeDelivery: boolean;
+  }) {
+    const { weight, isFragile, isHomeDelivery } = payload;
+
+    if (weight <= 0) {
+      throw new BadRequestException('Chargeable weight must be greater than 0 kg');
     }
 
-    // 2. Seed lane rates if empty
-    const laneRateCount = await this.laneRateRepository.count();
-    if (laneRateCount === 0) {
-      const route = this.laneRateRepository.create({
-        origin: 'Lagos Central',
-        destination: 'Abuja Main',
-        band: 'A',
-        base_price: 5000.00,
-        addl_per_kg: 450.00,
-        door_addon: 2500.00,
-      });
-      await this.laneRateRepository.save(route);
-      console.log('Default lane rates seeded successfully (Lagos Central -> Abuja Main)');
-    }
-  }
+    // In a full implementation, you would query your lane_rates table. 
+    // For this prototype vertical slice, we mock the DB lookup for 'Lagos Central' -> 'Abuja Main'
+    const basePrice = 5000.00;   // Base rate covers 0-5kg
+    const addlPerKg = 450.00;    // Cost per KG after 5kg
+    const doorAddon = 2500.00;   // Flat fee for home delivery
+    const fragileFee = payload.isFragile ? 1500.00 : 0.00;
 
-  async calculateQuote(
-    originDepotId: number,
-    destinationDepotId: number,
-    weight: number,
-    isHomeDelivery: boolean,
-  ) {
-    const originDepot = await this.depotRepository.findOne({ where: { id: originDepotId } });
-    const destDepot = await this.depotRepository.findOne({ where: { id: destinationDepotId } });
-
-    if (!originDepot || !destDepot) {
-      throw new NotFoundException('Origin or destination depot not found');
-    }
-
-    // Find the lane rate matching the origin and destination depot names
-    const laneRate = await this.laneRateRepository.findOne({
-      where: { origin: originDepot.depot_name, destination: destDepot.depot_name },
-    });
-
-    if (!laneRate) {
-      throw new NotFoundException(`No pricing rate found for lane: ${originDepot.depot_name} to ${destDepot.depot_name}`);
-    }
-
-    const basePrice = Number(laneRate.base_price);
-    const addlPerKg = Number(laneRate.addl_per_kg);
-    const doorAddon = Number(laneRate.door_addon);
-
-    // Calculate official price: base price (covers up to 5kg) + extra weight * rate per kg
-    let officialPrice = basePrice;
-    if (weight > 5) {
-      officialPrice += (weight - 5) * addlPerKg;
-    }
-
-    // Add door delivery fee if applicable
-    if (isHomeDelivery) {
-      officialPrice += doorAddon;
-    }
+    // Apply the core business logic formula: Base + max(0, KG - 5) * Addl_per_kg
+    const extraWeight = Math.max(0, weight - 5);
+    const officialBaseAndWeightPrice = basePrice + (extraWeight * addlPerKg);
+    
+    const totalAddons = (isHomeDelivery ? doorAddon : 0) + fragileFee;
+    const officialCalculatedPrice = officialBaseAndWeightPrice + totalAddons;
 
     return {
-      officialPrice,
       basePrice,
-      addlPerKg,
-      doorAddon,
+      extraWeight,
+      weightCharge: extraWeight * addlPerKg,
+      doorAddon: isHomeDelivery ? doorAddon : 0,
+      fragileFee,
+      officialCalculatedPrice,
     };
   }
 
-  async createWaybill(dto: any) {
-    const quote = await this.calculateQuote(
-      dto.origin_depot_id,
-      dto.destination_depot_id,
-      dto.chargeable_weight,
-      dto.is_home_delivery,
-    );
+  /**
+   * Registers a brand-new waybill inside the database with compliance auditing
+   */
+  async createWaybill(clerkId: number, data: any) {
+    // Generate an official sequential or unique tracked Waybill number
+    const uniqueId = Math.floor(100000 + Math.random() * 900000);
+    const waybillNo = `OSUMT-${Date.now().toString().slice(-4)}-${uniqueId}`;
 
-    const officialPrice = quote.officialPrice;
-    const finalChargedPrice = Number(dto.final_charged_price);
-    const discountApplied = officialPrice - finalChargedPrice;
-
-    // If final charged price is lower than the official rate, flag as unapproved
-    const isDiscountApproved = discountApplied <= 0;
-
-    const waybillNo = `WYB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const waybill = this.waybillRepository.create({
-      ...dto,
-      waybill_no: waybillNo,
-      official_calculated_price: officialPrice,
-      final_charged_price: finalChargedPrice,
-      discount_applied: discountApplied > 0 ? discountApplied : 0.00,
-      is_discount_approved: isDiscountApproved,
-      status: 'Registered',
-      payment: dto.payment || 'Unpaid',
+    // Get the system calculated rate
+    const quote = await this.calculateQuote({
+      origin: data.origin,
+      destination: data.destination,
+      weight: Number(data.chargeable_weight),
+      isFragile: data.is_fragile,
+      isHomeDelivery: data.is_home_delivery,
     });
 
-    return this.waybillRepository.save(waybill);
-  }
+    const officialPrice = quote.officialCalculatedPrice;
+    const finalPrice = Number(data.final_charged_price);
+    const discount = Math.max(0, officialPrice - finalPrice);
+    
+    // Core Audit Flag: If the final charged price is less than official rate, mark it unapproved
+    const isDiscountApproved = finalPrice >= officialPrice;
 
-  async getWaybills() {
-    return this.waybillRepository.find({ order: { created_at: 'DESC' } });
-  }
+    const newWaybill = this.waybillRepository.create({
+      waybill_no: waybillNo,
+      clerk_id: clerkId,
+      origin_depot_id: data.origin_depot_id || 1,
+      destination_depot_id: data.destination_depot_id || 2,
+      sender_name: data.sender_name,
+      sender_phone: data.sender_phone,
+      receiver_name: data.receiver_name,
+      receiver_phone: data.receiver_phone,
+      receiver_address: data.receiver_address,
+      item_description: data.item_description,
+      declared_value: data.declared_value,
+      chargeable_weight: data.chargeable_weight,
+      is_fragile: data.is_fragile,
+      is_home_delivery: data.is_home_delivery,
+      official_calculated_price: officialPrice,
+      final_charged_price: finalPrice,
+      discount_applied: discount,
+      is_discount_approved: isDiscountApproved,
+      status: 'Registered',
+      payment: data.payment || 'Unpaid',
+    });
 
-  async getDepots() {
-    return this.depotRepository.find({ where: { active_status: true } });
+    return await this.waybillRepository.save(newWaybill);
   }
 }

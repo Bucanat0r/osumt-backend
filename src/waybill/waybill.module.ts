@@ -3,14 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WaybillService } from './waybill.service';
 import { WaybillController } from './waybill.controller';
 import { Waybill } from './waybill.entity';
-import { Depot } from './depot.entity';
-import { LaneRate } from './lane-rate.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Waybill, Depot, LaneRate]),
-  ],
-  providers: [WaybillService],
+  imports: [TypeOrmModule.forFeature([Waybill])],
   controllers: [WaybillController],
+  providers: [WaybillService],
+  exports: [WaybillService],
 })
 export class WaybillModule {}
