@@ -28,6 +28,11 @@ export class WaybillController {
     return this.waybillService.createWaybill(mockClerkId, body);
   }
 
+  @Get()
+  async getWaybills() {
+    return this.waybillService.findAllWaybills();
+  }
+
   @Get(':id')
   async getWaybill(@Param('id') id: string) {
     return this.waybillService.findOneWaybill(Number(id));

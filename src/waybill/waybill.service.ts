@@ -102,6 +102,10 @@ export class WaybillService {
     return await this.waybillRepository.save(newWaybill);
   }
 
+  async findAllWaybills() {
+    return await this.waybillRepository.find({ order: { id: 'DESC' } });
+  }
+
   async findOneWaybill(id: number) {
     const waybill = await this.waybillRepository.findOne({ where: { id } });
     if (!waybill) {
