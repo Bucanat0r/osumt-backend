@@ -80,6 +80,8 @@ export class WaybillService {
       clerk_id: clerkId,
       origin_depot_id: data.origin_depot_id || 1,
       destination_depot_id: data.destination_depot_id || 2,
+      origin: data.origin || 'Lagos Central',
+      destination: data.destination || 'Abuja Main',
       sender_name: data.sender_name,
       sender_phone: data.sender_phone,
       receiver_name: data.receiver_name,

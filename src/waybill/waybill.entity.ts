@@ -15,6 +15,12 @@ export class Waybill {
   destination_depot_id: number;
 
   @Column({ nullable: true })
+  origin: string;
+
+  @Column({ nullable: true })
+  destination: string;
+
+  @Column({ nullable: true })
   clerk_id: number;
 
   @Column({ nullable: false })
