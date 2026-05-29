@@ -59,6 +59,9 @@ export class Waybill {
   @Column({ default: true, nullable: true })
   is_discount_approved: boolean;
 
+  @Column({ default: false, nullable: true })
+  had_override: boolean;
+
   @Column({ default: 'Registered', nullable: true })
   status: string;
 

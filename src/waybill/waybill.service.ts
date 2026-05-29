@@ -94,6 +94,7 @@ export class WaybillService {
       final_charged_price: finalPrice,
       discount_applied: discount,
       is_discount_approved: isDiscountApproved,
+      had_override: finalPrice < officialPrice,
       status: 'Registered',
       payment: data.payment || 'Unpaid',
     });

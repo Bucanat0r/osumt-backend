@@ -47,6 +47,9 @@ export class DailySales {
   @Column({ default: false, nullable: true })
   is_locked: boolean;
 
+  @Column({ default: false, nullable: true })
+  had_mismatch: boolean;
+
   @CreateDateColumn({ nullable: true })
   created_at: Date;
 }

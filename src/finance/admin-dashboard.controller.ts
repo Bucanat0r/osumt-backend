@@ -30,20 +30,22 @@ export class AdminDashboardController {
 
     // 2. Query out non-compliant operational anomaly flags dynamically
     const bankDeltaFlags = salesData
-      .filter(day => Number(day.bank_delta) !== 0)
+      .filter(day => day.had_mismatch)
       .map(day => ({
         id: day.id,
         type: 'Bank Delta Mismatch',
         description: `Depot posted variance of ₦${Number(day.bank_delta).toLocaleString()} on ${day.posting_date}`,
-        severity: 'Critical'
+        severity: 'Critical',
+        resolved: Number(day.bank_delta) === 0,
       }));
 
-    const unapprovedDiscounts = await this.waybillRepo.find({ where: { is_discount_approved: false } });
-    const discountFlags = unapprovedDiscounts.map(wb => ({
+    const overrideWaybills = await this.waybillRepo.find({ where: { had_override: true } });
+    const discountFlags = overrideWaybills.map(wb => ({
       id: wb.id,
       type: 'Rate Manipulation Override',
       description: `Waybill ${wb.waybill_no} charged ₦${Number(wb.final_charged_price).toLocaleString()} instead of standard ₦${Number(wb.official_calculated_price).toLocaleString()}`,
-      severity: 'Warning'
+      severity: 'Warning',
+      resolved: wb.is_discount_approved,
     }));
 
     return {

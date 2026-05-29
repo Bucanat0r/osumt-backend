@@ -47,8 +47,9 @@ export class FinanceService {
       expected_bank: expectedBank,
       actual_banked: actualBanked,
       bank_delta: bankDelta,
-      bank_proof_url: dto.bank_proof_url || 'https://storage.osumtgo.com/proofs/mock-slip.jpg', // Placeholder for now
-      is_locked: true, // Lock day report on successful submission
+      bank_proof_url: dto.bank_proof_url || 'https://storage.osumtgo.com/proofs/mock-slip.jpg',
+      is_locked: true,
+      had_mismatch: bankDelta !== 0,
     });
 
     return await this.salesRepository.save(record);
@@ -91,6 +92,9 @@ export class FinanceService {
 
     // Rule 4: Compute Bank Delta variance
     record.bank_delta = record.actual_banked - record.expected_bank;
+    if (record.bank_delta !== 0) {
+      record.had_mismatch = true;
+    }
 
     return await this.salesRepository.save(record);
   }
